@@ -12,7 +12,7 @@ import butterknife.ButterKnife;
  * Created by SamMyxer on 8/1/16.
  */
 
-public class PlaceViewHolder extends RecyclerView.ViewHolder {
+public class PlaceViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
     private Context context;
 
@@ -20,16 +20,25 @@ public class PlaceViewHolder extends RecyclerView.ViewHolder {
     public TextView nameTextView;
     @BindView(R.id.row_place_address_text_view)
     public TextView addressTextView;
+    PlaceAdapter.OnPlaceClickedListener onPlaceClickedListener;
+    SimplePlace simplePlace;
 
-    public PlaceViewHolder(View itemView) {
+    public PlaceViewHolder(View itemView, PlaceAdapter.OnPlaceClickedListener onPlaceClickedListener) {
         super(itemView);
         context = itemView.getContext();
         ButterKnife.bind(this, itemView);
+        itemView.setOnClickListener(this);
+        this.onPlaceClickedListener = onPlaceClickedListener;
     }
 
-    public void bindView(Place place) {
-        nameTextView.setText(place.name);
-        addressTextView.setText(place.address);
+    public void bindView(SimplePlace simplePlace) {
+        this.simplePlace = simplePlace;
+        nameTextView.setText(simplePlace.name);
+        addressTextView.setText(simplePlace.address);
     }
 
+    @Override
+    public void onClick(View view) {
+        onPlaceClickedListener.onPlaceSelected(simplePlace.id);
+    }
 }

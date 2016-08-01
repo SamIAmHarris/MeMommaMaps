@@ -12,14 +12,22 @@ import java.util.ArrayList;
  * Created by SamMyxer on 8/1/16.
  */
 
-public class PlaceAdapter extends RecyclerView.Adapter<PlaceViewHolder> {
+public class PlaceAdapter extends RecyclerView.Adapter<PlaceViewHolder>{
 
     Context context;
-    ArrayList<Place> places;
+    ArrayList<SimplePlace> simplePlaces;
+    int currentPosition;
+    public OnPlaceClickedListener onPlaceClickedListener;
 
-    public PlaceAdapter(Context context, ArrayList<Place> places) {
+
+    public interface OnPlaceClickedListener {
+        void onPlaceSelected(String id);
+    }
+
+    public PlaceAdapter(Context context, ArrayList<SimplePlace> simplePlaces, OnPlaceClickedListener onPlaceClickedListener) {
         this.context = context;
-        this.places = places;
+        this.simplePlaces = simplePlaces;
+        this.onPlaceClickedListener = onPlaceClickedListener;
     }
 
     @Override
@@ -27,19 +35,20 @@ public class PlaceAdapter extends RecyclerView.Adapter<PlaceViewHolder> {
         View v = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.row_place, parent, false);
 
-        return new PlaceViewHolder(v);
+        return new PlaceViewHolder(v, onPlaceClickedListener);
     }
 
     @Override
     public void onBindViewHolder(PlaceViewHolder holder, int position) {
-        Place place = places.get(position);
-        holder.bindView(place);
+        SimplePlace simplePlace = simplePlaces.get(position);
+        this.currentPosition = position;
+        holder.bindView(simplePlace);
     }
 
     @Override
     public int getItemCount() {
-        if(places != null) {
-            return places.size();
+        if(simplePlaces != null) {
+            return simplePlaces.size();
         }
         return 0;
     }

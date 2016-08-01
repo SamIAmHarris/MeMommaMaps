@@ -1,5 +1,7 @@
 package com.samiamharris.memommamaps;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -19,6 +21,8 @@ import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.location.places.AutocompleteFilter;
 import com.google.android.gms.location.places.AutocompletePrediction;
 import com.google.android.gms.location.places.AutocompletePredictionBuffer;
+import com.google.android.gms.location.places.Place;
+import com.google.android.gms.location.places.PlaceBuffer;
 import com.google.android.gms.location.places.Places;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
@@ -33,7 +37,7 @@ import butterknife.ButterKnife;
  */
 
 public class EnterAddressActivity extends AppCompatActivity
-        implements GoogleApiClient.OnConnectionFailedListener {
+        implements GoogleApiClient.OnConnectionFailedListener, PlaceAdapter.OnPlaceClickedListener {
 
     @BindView(R.id.enter_address_edit_text)
     EditText enterAddressEditText;
@@ -41,7 +45,7 @@ public class EnterAddressActivity extends AppCompatActivity
     RecyclerView addressRecyclerView;
 
     PlaceAdapter placeAdapter;
-    ArrayList<Place> places;
+    ArrayList<SimplePlace> simplePlaces;
 
     GoogleApiClient googleApiClient;
 
@@ -57,8 +61,8 @@ public class EnterAddressActivity extends AppCompatActivity
         setContentView(R.layout.activity_enter_address);
         ButterKnife.bind(this);
 
-        places = new ArrayList<Place>();
-        placeAdapter = new PlaceAdapter(this, places);
+        simplePlaces = new ArrayList<SimplePlace>();
+        placeAdapter = new PlaceAdapter(this, simplePlaces, this);
         addressRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         addressRecyclerView.setAdapter(placeAdapter);
 
@@ -92,11 +96,11 @@ public class EnterAddressActivity extends AppCompatActivity
                         public void onResult(@NonNull AutocompletePredictionBuffer autocompletePredictions) {
                             if(autocompletePredictions.getCount() > 0) {
                                 for(AutocompletePrediction autocompletePrediction: autocompletePredictions) {
-                                    Place place = new Place(
+                                    SimplePlace simplePlace = new SimplePlace(
                                             autocompletePrediction.getPrimaryText(null).toString(),
                                             autocompletePrediction.getSecondaryText(null).toString(),
                                             autocompletePrediction.getPlaceId());
-                                    places.add(place);
+                                    simplePlaces.add(simplePlace);
                                     Log.i(TAG, autocompletePrediction.getPrimaryText(null).toString());
                                 }
                                 placeAdapter.notifyDataSetChanged();
@@ -116,5 +120,37 @@ public class EnterAddressActivity extends AppCompatActivity
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
         Toast.makeText(EnterAddressActivity.this, "Connection failed", Toast.LENGTH_LONG).show();
+    }
+
+    public void getPlaceById(String placeId) {
+        Places.GeoDataApi.getPlaceById(googleApiClient, placeId)
+                .setResultCallback(new ResultCallback<PlaceBuffer>() {
+                    @Override
+                    public void onResult(PlaceBuffer places) {
+                        if (places.getStatus().isSuccess() && places.getCount() > 0) {
+                            Place place = places.get(0);
+                            LatLng latLng = place.getLatLng();
+                            Log.i(TAG, "LatLng " + latLng.toString());
+                            Log.i(TAG, "Place found: " + place.getName());
+                            String latLngString = String.valueOf(latLng.latitude) + "," + String.valueOf(latLng.longitude);
+
+                            Intent intent = new Intent( Intent.ACTION_VIEW,
+                                    Uri.parse("http://ditu.google.cn/maps?f=d&source=s_d" +
+                                            "&saddr=" + latLngString + "&daddr=" + latLngString + "&hl=zh&t=m&dirflg=d"));
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK & Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+                            intent.setClassName("com.google.android.apps.maps", "com.google.android.maps.MapsActivity");
+                            startActivity(intent);
+                        } else {
+                            Log.e(TAG, "Place not found");
+                        }
+                        places.release();
+                    }
+                });
+    }
+
+    @Override
+    public void onPlaceSelected(String id) {
+        getPlaceById(id);
+
     }
 }
